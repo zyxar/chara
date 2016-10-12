@@ -18,7 +18,7 @@ func validateFileHash(file *pe.File, hash []byte) bool {
 
 func calculateFileHash(file *pe.File) []byte {
 	hash := md5.New()
-	hash.Write([]byte{'P', 'E', 0, 0})
+	hash.Write(PE_MAGIC_BYTES)
 	file.FileHeader.TimeDateStamp = 0
 	binary.Write(hash, binary.LittleEndian, &file.FileHeader)
 	var directory [16]pe.DataDirectory
@@ -107,7 +107,7 @@ func calculateFileHash(file *pe.File) []byte {
 
 func detectExecutableSections(file *pe.File) (p []pe.SectionHeader) {
 	for i := range file.Sections {
-		if file.Sections[i].Characteristics&0x20 != 0 {
+		if file.Sections[i].Characteristics&IMAGE_SCN_CNT_CODE != 0 {
 			p = append(p, file.Sections[i].SectionHeader)
 		}
 	}
