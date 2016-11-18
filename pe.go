@@ -6,6 +6,7 @@ import (
 	"debug/pe"
 	"encoding/binary"
 	"errors"
+	"io"
 )
 
 var (
@@ -135,6 +136,14 @@ func ValidateFileHash(name string, hash []byte) error {
 
 func ScanFile(name string) ([]pe.SectionHeader, []byte, error) {
 	file, err := pe.Open(name)
+	if err != nil {
+		return nil, nil, err
+	}
+	return detectExecutableSections(file), calculateFileHash(file), nil
+}
+
+func ScanReaderAt(r io.ReaderAt) ([]pe.SectionHeader, []byte, error) {
+	file, err := pe.NewFile(r)
 	if err != nil {
 		return nil, nil, err
 	}
