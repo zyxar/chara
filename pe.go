@@ -13,14 +13,16 @@ var (
 	ErrFileHashNotMatch = errors.New("hash not match")
 )
 
-func validateFileHash(file *pe.File, hash []byte) bool {
-	return bytes.Compare(calculateFileHash(file), hash) == 0
+func validateFileHash(file *pe.File, hash []byte, clearBits bool) bool {
+	return bytes.Compare(calculateFileHash(file, clearBits), hash) == 0
 }
 
-func calculateFileHash(file *pe.File) []byte {
+func calculateFileHash(file *pe.File, clearBits bool) []byte {
 	hash := md5.New()
 	hash.Write(PE_MAGIC_BYTES)
-	file.FileHeader.TimeDateStamp = 0
+	if clearBits {
+		file.FileHeader.TimeDateStamp = 0
+	}
 	binary.Write(hash, binary.LittleEndian, &file.FileHeader)
 	var directory [16]pe.DataDirectory
 	switch h := file.OptionalHeader.(type) {
@@ -32,7 +34,11 @@ func calculateFileHash(file *pe.File) []byte {
 		binary.Write(hash, binary.LittleEndian, h.SizeOfCode)
 		binary.Write(hash, binary.LittleEndian, h.SizeOfInitializedData)
 		binary.Write(hash, binary.LittleEndian, h.SizeOfUninitializedData)
-		binary.Write(hash, binary.LittleEndian, h.AddressOfEntryPoint&0xFFFE0000)
+		if clearBits {
+			binary.Write(hash, binary.LittleEndian, h.AddressOfEntryPoint&0xFFFE0000)
+		} else {
+			binary.Write(hash, binary.LittleEndian, h.AddressOfEntryPoint)
+		}
 		binary.Write(hash, binary.LittleEndian, h.BaseOfCode)
 		binary.Write(hash, binary.LittleEndian, h.BaseOfData)
 		binary.Write(hash, binary.LittleEndian, h.ImageBase)
@@ -40,14 +46,27 @@ func calculateFileHash(file *pe.File) []byte {
 		binary.Write(hash, binary.LittleEndian, h.FileAlignment)
 		binary.Write(hash, binary.LittleEndian, h.MajorOperatingSystemVersion)
 		binary.Write(hash, binary.LittleEndian, h.MinorOperatingSystemVersion)
-		binary.Write(hash, binary.LittleEndian, uint16(0) /*h.MajorImageVersion*/)
-		binary.Write(hash, binary.LittleEndian, uint16(0) /*h.MinorImageVersion*/)
+		if clearBits {
+			binary.Write(hash, binary.LittleEndian, uint16(0))
+			binary.Write(hash, binary.LittleEndian, uint16(0))
+		} else {
+			binary.Write(hash, binary.LittleEndian, h.MajorImageVersion)
+			binary.Write(hash, binary.LittleEndian, h.MinorImageVersion)
+		}
 		binary.Write(hash, binary.LittleEndian, h.MajorSubsystemVersion)
 		binary.Write(hash, binary.LittleEndian, h.MinorSubsystemVersion)
 		binary.Write(hash, binary.LittleEndian, h.Win32VersionValue)
-		binary.Write(hash, binary.LittleEndian, h.SizeOfImage&0xFFFFF000)
+		if clearBits {
+			binary.Write(hash, binary.LittleEndian, h.SizeOfImage&0xFFFFF000)
+		} else {
+			binary.Write(hash, binary.LittleEndian, h.SizeOfImage)
+		}
 		binary.Write(hash, binary.LittleEndian, h.SizeOfHeaders)
-		binary.Write(hash, binary.LittleEndian, uint32(0) /*h.CheckSum*/)
+		if clearBits {
+			binary.Write(hash, binary.LittleEndian, uint32(0))
+		} else {
+			binary.Write(hash, binary.LittleEndian, h.CheckSum)
+		}
 		binary.Write(hash, binary.LittleEndian, h.Subsystem)
 		binary.Write(hash, binary.LittleEndian, h.DllCharacteristics)
 		binary.Write(hash, binary.LittleEndian, h.SizeOfStackReserve)
@@ -65,21 +84,38 @@ func calculateFileHash(file *pe.File) []byte {
 		binary.Write(hash, binary.LittleEndian, h.SizeOfCode)
 		binary.Write(hash, binary.LittleEndian, h.SizeOfInitializedData)
 		binary.Write(hash, binary.LittleEndian, h.SizeOfUninitializedData)
-		binary.Write(hash, binary.LittleEndian, h.AddressOfEntryPoint&0xFFFE0000)
+		if clearBits {
+			binary.Write(hash, binary.LittleEndian, h.AddressOfEntryPoint&0xFFFE0000)
+		} else {
+			binary.Write(hash, binary.LittleEndian, h.AddressOfEntryPoint)
+		}
 		binary.Write(hash, binary.LittleEndian, h.BaseOfCode)
 		binary.Write(hash, binary.LittleEndian, h.ImageBase)
 		binary.Write(hash, binary.LittleEndian, h.SectionAlignment)
 		binary.Write(hash, binary.LittleEndian, h.FileAlignment)
 		binary.Write(hash, binary.LittleEndian, h.MajorOperatingSystemVersion)
 		binary.Write(hash, binary.LittleEndian, h.MinorOperatingSystemVersion)
-		binary.Write(hash, binary.LittleEndian, uint16(0) /*h.MajorImageVersion*/)
-		binary.Write(hash, binary.LittleEndian, uint16(0) /*h.MinorImageVersion*/)
+		if clearBits {
+			binary.Write(hash, binary.LittleEndian, uint16(0))
+			binary.Write(hash, binary.LittleEndian, uint16(0))
+		} else {
+			binary.Write(hash, binary.LittleEndian, h.MajorImageVersion)
+			binary.Write(hash, binary.LittleEndian, h.MinorImageVersion)
+		}
 		binary.Write(hash, binary.LittleEndian, h.MajorSubsystemVersion)
 		binary.Write(hash, binary.LittleEndian, h.MinorSubsystemVersion)
 		binary.Write(hash, binary.LittleEndian, h.Win32VersionValue)
-		binary.Write(hash, binary.LittleEndian, h.SizeOfImage&0xFFFFF000)
+		if clearBits {
+			binary.Write(hash, binary.LittleEndian, h.SizeOfImage&0xFFFFF000)
+		} else {
+			binary.Write(hash, binary.LittleEndian, h.SizeOfImage)
+		}
 		binary.Write(hash, binary.LittleEndian, h.SizeOfHeaders)
-		binary.Write(hash, binary.LittleEndian, uint32(0) /*h.CheckSum*/)
+		if clearBits {
+			binary.Write(hash, binary.LittleEndian, uint32(0))
+		} else {
+			binary.Write(hash, binary.LittleEndian, h.CheckSum)
+		}
 		binary.Write(hash, binary.LittleEndian, h.Subsystem)
 		binary.Write(hash, binary.LittleEndian, h.DllCharacteristics)
 		binary.Write(hash, binary.LittleEndian, h.SizeOfStackReserve)
@@ -92,15 +128,25 @@ func calculateFileHash(file *pe.File) []byte {
 	}
 	// import table
 	dir := directory[1]
-	dir.VirtualAddress &= 0xFFFFFF00
-	dir.Size &= 0xFFFFFF00
+	if clearBits {
+		dir.VirtualAddress &= 0xFFFFFF00
+		dir.Size &= 0xFFFFFF00
+	}
 	binary.Write(hash, binary.LittleEndian, &dir)
 	// resource table
 	dir = directory[2]
-	binary.Write(hash, binary.LittleEndian, dir.Size&0xFFFFFF00)
+	if clearBits {
+		binary.Write(hash, binary.LittleEndian, dir.Size&0xFFFFFF00)
+	} else {
+		binary.Write(hash, binary.LittleEndian, dir.Size)
+	}
 	// all section names and characteristics
 	for i := range file.Sections {
-		binary.Write(hash, binary.LittleEndian, file.Sections[i].Size&0xFFFFF000)
+		if clearBits {
+			binary.Write(hash, binary.LittleEndian, file.Sections[i].Size&0xFFFFF000)
+		} else {
+			binary.Write(hash, binary.LittleEndian, file.Sections[i].Size)
+		}
 		binary.Write(hash, binary.LittleEndian, file.Sections[i].Characteristics)
 	}
 	return hash.Sum(nil)
@@ -123,29 +169,29 @@ func DetectExecutableSections(name string) ([]pe.SectionHeader, error) {
 	return detectExecutableSections(file), nil
 }
 
-func ValidateFileHash(name string, hash []byte) error {
+func ValidateFileHash(name string, hash []byte, clearBits bool) error {
 	file, err := pe.Open(name)
 	if err != nil {
 		return err
 	}
-	if !validateFileHash(file, hash) {
+	if !validateFileHash(file, hash, clearBits) {
 		return ErrFileHashNotMatch
 	}
 	return nil
 }
 
-func ScanFile(name string) ([]pe.SectionHeader, []byte, error) {
+func ScanFile(name string, clearBits bool) ([]pe.SectionHeader, []byte, error) {
 	file, err := pe.Open(name)
 	if err != nil {
 		return nil, nil, err
 	}
-	return detectExecutableSections(file), calculateFileHash(file), nil
+	return detectExecutableSections(file), calculateFileHash(file, clearBits), nil
 }
 
-func ScanReaderAt(r io.ReaderAt) ([]pe.SectionHeader, []byte, error) {
+func ScanReaderAt(r io.ReaderAt, clearBits bool) ([]pe.SectionHeader, []byte, error) {
 	file, err := pe.NewFile(r)
 	if err != nil {
 		return nil, nil, err
 	}
-	return detectExecutableSections(file), calculateFileHash(file), nil
+	return detectExecutableSections(file), calculateFileHash(file, clearBits), nil
 }
